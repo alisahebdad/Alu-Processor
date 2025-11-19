@@ -1,0 +1,89 @@
+$date
+	Wed Nov 19 23:31:58 2025
+$end
+$version
+	Icarus Verilog
+$end
+$timescale
+	1s
+$end
+$scope module tb_mem $end
+$var wire 16 ! dout [15:0] $end
+$var reg 6 " addr [5:0] $end
+$var reg 16 # din [15:0] $end
+$var reg 1 $ we $end
+$scope module dut $end
+$var wire 6 % addr [5:0] $end
+$var wire 16 & din [15:0] $end
+$var wire 16 ' dout [15:0] $end
+$var wire 1 $ writeEnable $end
+$upscope $end
+$upscope $end
+$enddefinitions $end
+$comment Show the parameter values. $end
+$dumpall
+$end
+#0
+$dumpvars
+bx '
+bx &
+bx %
+x$
+bx #
+bx "
+bx !
+$end
+#1
+b1 !
+b1 '
+b0 "
+b0 %
+#2
+b10 !
+b10 '
+b1 "
+b1 %
+#3
+b11111111 !
+b11111111 '
+b10 "
+b10 %
+#4
+1$
+b1001000110100 #
+b1001000110100 &
+b1001000110100 !
+b1001000110100 '
+b11 "
+b11 %
+#5
+b100001100100001 #
+b100001100100001 &
+b100001100100001 !
+b100001100100001 '
+b100 "
+b100 %
+#6
+b111000011110000 #
+b111000011110000 &
+b111000011110000 !
+b111000011110000 '
+b101 "
+b101 %
+#7
+b1001000110100 !
+b1001000110100 '
+b11 "
+b11 %
+0$
+#8
+b100001100100001 !
+b100001100100001 '
+b100 "
+b100 %
+#9
+b111000011110000 !
+b111000011110000 '
+b101 "
+b101 %
+#30
