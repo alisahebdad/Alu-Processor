@@ -7,24 +7,17 @@ module PC #(parameter N = 6)(
     input [N-1:0]data_in,
     output reg [N-1:0]data_out
 );
-    always @(posedge clk,rst) begin 
-        if (rst) 
-            data_out <= {N{1'b0}};
-        else begin 
-            if (clr_pc)
-                data_out <= {N{1'b0}};
-            else if (inc_pc) data_out <= data_out + 1;
-            else if (ld_pc) data_out <= data_in;
-            
-        
-        
-        end 
 
-
+always @(posedge clk,posedge rst) begin 
+    if (rst || clr_pc) 
+        data_out <= {N{1'b0}};
+    else begin 
+        if (ld_pc) 
+            data_out <= data_in;
+        else if (inc_pc) 
+            data_out <= data_out + 1;
+ 
     end 
-
-
-
-
+end 
 
 endmodule

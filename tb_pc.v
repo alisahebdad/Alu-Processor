@@ -22,12 +22,18 @@ initial begin
     $dumpfile("wave.vcd");
     $dumpvars(0, tb_pc);
     clk = 0;
+    clr_pc = 0;
+    data_in = 0;
+    inc_pc = 0;
+    ld_pc = 0;
     #20
     rst = 1;
     #10
     rst = 0;
-    inc_pc = 1;
+    inc_pc = 0;
     #40
+    inc_pc = 1;
+    #10;
     inc_pc = 0;
     clr_pc = 1;
     #10

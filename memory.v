@@ -1,12 +1,12 @@
-module memory_64x16 (
+module memory_64xN #(parameter MEM_WIDTH=8)(
     input              writeEnable,
     input  [5:0]       addr,    // 6-bit for 64 rows
-    input  [15:0]      din,
-    output [15:0]      dout
+    input  [MEM_WIDTH-1:0]      din,
+    output [MEM_WIDTH-1:0]      dout
 );
 
     // 64 rows × 16 bits
-    reg [15:0] mem [0:63];
+    reg [MEM_WIDTH-1:0] mem [0:63];
 
     // Asynchronous read
     assign dout = mem[addr];

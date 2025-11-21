@@ -12,7 +12,7 @@ OUT="sim_$TS.out"
 
 # --- Compile with iverilog ---
 echo "Compiling..."
-iverilog -o "$OUT" "$@"
+iverilog -g2012 -o "$OUT" "$@"
 if [ $? -ne 0 ]; then
     echo "iverilog compilation failed!"
     exit 1
