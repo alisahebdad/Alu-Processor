@@ -1,4 +1,4 @@
-module cpu #(parameter MEM_WIDTH=8)(
+module cpu #(parameter MEM_WIDTH=16)(
     input  clk,rst,
     input  [MEM_WIDTH-1:0]data_bus_in,
     output [MEM_WIDTH-1:0]data_bus_out,
@@ -23,8 +23,6 @@ PC pc(
     .data_out(pc_out)
     );
 
-
-
 reg ld_ir;
 reg [MEM_WIDTH-1:0]data_out_ir;
 
@@ -40,36 +38,39 @@ IR #(.N(MEM_WIDTH))ir(
 reg ld_ac;
 wire [7:0] data_out_ac;
 reg [7:0]data_ld_ac;
-AC #(.N(8)) ac(
+assign reg_addrs = data_out_ir[MEM_WIDTH-4:MEM_WIDTH-7];
+reg_file_single_port #(.WIDTH(8),.DEPTH(8)) regfile(
     .clk(clk),
-    .rst(rst),
-    .ld_ac(ld_ac),
-    .data_in(data_ld_ac),
-    .data_out(data_out_ac)
+    .rst(rst),      // synchronous reset
+    .we(ld_ac),       // write enable
+    .addr(reg_addrs),     // SAME for read & write
+    .wdata(data_ld_ac),    // write data
+    .rdata(data_out_ac)     // read data
 );
 
-// module Alu #(parameter N = 8)(
-//     input[2:0] opcode,input [N-1:0] A,B,
-//     output reg [N-1:0] y,
-//     output reg overflow)
+
+
+// AC #(.N(8)) ac(
+//     .clk(clk),
+//     .rst(rst),
+//     .ld_ac(ld_ac),
+//     .data_in(data_ld_ac),
+//     .data_out(data_out_ac)
+//  );
+
 reg[2:0] alu_opcode;
 wire alu_overflow;
 wire [7:0] alu_b = {2'b00,data_out_ir[5:0]};
-
-// module Alu #(parameter N = 8)(
-//     input[2:0] opcode,input [N-1:0] A,B,
-//     output reg [N-1:0] y,
-//     output reg overflow);
-
+wire [7:0] alu_y;
 
 Alu #(.N(8)) alu(
     .opcode(alu_opcode),
     .A(data_out_ac),
     .B(alu_b),
-    .y(data_bus_out),
+    .y(alu_y),
     .overflow(alu_overflow)
 );  
-
+assign data_bus_out = {{8{alu_y[7]}},alu_y[7:0]};
 
 
 // ........................ control unit ..........................
@@ -80,23 +81,15 @@ typedef enum logic [1:0] {
     EXECUTE = 2'b11
 } cpu_state;
 
-typedef enum logic [1:0] {
-    add_imdt = 2'b00,
-    lda_addr = 2'b01,
-    sta_addr = 2'b10,
-    jmp_addr = 2'b11
+typedef enum logic [2:0] {
+    add_imdt = 3'b000,
+    lda_addr = 3'b010,
+    sta_addr = 3'b100,
+    jmp_addr = 3'b110
 } opcode;
 
 
 cpu_state state;
-
-// always @(posedge clk) begin 
-//     if (state == EXECUTE) begin 
-//         inc_pc <= 1;
-//     end else begin 
-//         inc_pc <= 0;
-//     end 
-// end
 
 always @(posedge clk,posedge rst) begin
     if (rst)
@@ -109,10 +102,17 @@ always @(posedge clk,posedge rst) begin
             EXECUTE: state <= FETCH;
         endcase
 end 
+wire [2:0] ir_opcode;
+// wire []
+assign ir_opcode = data_out_ir[MEM_WIDTH-1:MEM_WIDTH-3];
 
-always @(data_out_ir) begin 
+
+
+
+
+always @(ir_opcode) begin 
     if (state == DECODE) begin
-        case (data_out_ir[7:6])
+        case (ir_opcode)
             sta_addr: alu_opcode = 3'b100;
             add_imdt: alu_opcode = 3'b000;
             lda_addr: alu_opcode = 3'b000;
@@ -125,88 +125,58 @@ end
 
 // fetch from memory  
 always @(posedge clk) begin 
-    if (state == RESET) begin 
+    case(state)
+    RESET:begin 
         inc_pc <= 0;
-        ir_on_addr = 0;
+        ir_on_addr <= 0;
         addr_bus <= 0;
         ld_ir <= 1;
         clr_pc <= 0;
         ld_pc <= 0 ;
         mem_write <= 0;
         ld_ac <= 0;
-    end else begin 
-        case(state)
-        FETCH:begin
-            inc_pc <= 1;
-            ld_ir <= 0;
-            ld_ac <= 0;
-        end 
-        DECODE:begin 
-            ld_ir <= 0;
-            ld_ac <= 0;
-            case (data_out_ir[7:6])
-                sta_addr:begin
-                    ir_on_addr <= 1;
-                    mem_write <= 1;
-                    addr_bus <= {2'b00,data_out_ir[5:0]};
-                    
-                end 
-                lda_addr:begin 
-                    ir_on_addr <= 1;
-                    addr_bus <= {2'b00,data_out_ir[5:0]};
-
-                end 
-                add_imdt:begin 
-                    
-                    data_ld_ac <= data_bus_out;
-                    ld_ac <= 1;
-                end 
-                jmp_addr:begin 
-
-                end 
-
-            endcase
-
-            #1 inc_pc <= 0;
-
-
-
-        end 
-
-        EXECUTE:begin 
-            ir_on_addr <= 0;
-            ld_ac <= 0;
-            addr_bus <= pc_out;
-            ld_ir <= 1;  
-            mem_write <= 0;          
-        end 
-
-
-        default:begin 
-
-        end 
-
-        endcase
-
-
-
-        if (state == FETCH) begin 
-            addr_bus <= pc_out;
-            
-        end else begin 
-            inc_pc = 0;
-            if (state == DECODE) begin 
-                if (data_out_ir[7:6] == lda_addr || data_out_ir[7:6] == sta_addr) begin 
-                    ir_on_addr = 1;
-                end 
-
-            end 
-
-            
-        end 
     end 
+    FETCH:begin
+        inc_pc <= 1;
+        ld_ir <= 0;
+        ld_ac <= 0;
+    end 
+    DECODE:begin 
+        ld_ir <= 0;
+        ld_ac <= 0;
+        case (ir_opcode)
+            sta_addr:begin
+                ir_on_addr <= 1;
+                mem_write <= 1;
+                addr_bus <= {2'b00,data_out_ir[5:0]};
+            end 
+            lda_addr:begin 
+                ir_on_addr <= 1;
+                addr_bus <= {2'b00,data_out_ir[5:0]};
+            end 
+            add_imdt:begin 
+                data_ld_ac <= data_bus_out;
+                ld_ac <= 1;
+            end 
+            jmp_addr:begin 
+            end 
+        endcase
+        inc_pc <= 0;
+    end 
+
+    EXECUTE:begin 
+        ir_on_addr <= 0;
+        ld_ac <= 0;
+        addr_bus <= pc_out;
+        ld_ir <= 1;  
+        mem_write <= 0;          
+    end 
+
+    default:begin 
+
+    end 
+
+    endcase
 end 
-
-
 
 endmodule

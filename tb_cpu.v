@@ -1,5 +1,5 @@
 module tb_cpu;
-parameter MEM_WIDTH = 8;
+parameter MEM_WIDTH = 16;
 
 reg clk;
 reg rst;
