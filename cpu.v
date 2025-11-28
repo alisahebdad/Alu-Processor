@@ -74,11 +74,12 @@ assign data_bus_out = {{8{alu_y[7]}},alu_y[7:0]};
 
 
 // ........................ control unit ..........................
-typedef enum logic [1:0] {
-    RESET   = 2'b00,
-    FETCH   = 2'b01,
-    DECODE  = 2'b10,
-    EXECUTE = 2'b11
+typedef enum logic [2:0] {
+    RESET    = 3'b000,
+    FETCH    = 3'b010,
+    DECODE   = 3'b100,
+    EXECUTE  = 3'b110,
+    EXECUTE2 = 3'b111
 } cpu_state;
 
 typedef enum logic [2:0] {
@@ -125,10 +126,10 @@ end
 
 // fetch from memory  
 always @(posedge clk) begin 
+    inc_pc <= 0;
+
     case(state)
     RESET:begin 
-        inc_pc <= 0;
-        ir_on_addr <= 0;
         addr_bus <= 0;
         ld_ir <= 1;
         clr_pc <= 0;
@@ -146,12 +147,10 @@ always @(posedge clk) begin
         ld_ac <= 0;
         case (ir_opcode)
             sta_addr:begin
-                ir_on_addr <= 1;
                 mem_write <= 1;
                 addr_bus <= {2'b00,data_out_ir[5:0]};
             end 
             lda_addr:begin 
-                ir_on_addr <= 1;
                 addr_bus <= {2'b00,data_out_ir[5:0]};
             end 
             add_imdt:begin 
@@ -161,11 +160,9 @@ always @(posedge clk) begin
             jmp_addr:begin 
             end 
         endcase
-        inc_pc <= 0;
     end 
 
     EXECUTE:begin 
-        ir_on_addr <= 0;
         ld_ac <= 0;
         addr_bus <= pc_out;
         ld_ir <= 1;  
