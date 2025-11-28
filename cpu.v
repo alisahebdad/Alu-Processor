@@ -41,7 +41,9 @@ wire [7:0] data_out_regFile;
 reg [7:0]data_ld_regFile;
 wire [1:0] reg_addrs;
 assign reg_addrs = data_out_ir[MEM_WIDTH-4:MEM_WIDTH-5];
-reg_file_single_port #(.WIDTH(8),.DEPTH(8)) regfile(
+//assign reg_addrs = state == EXECUTE2 ? data_out_ir[MEM_WIDTH-6:MEM_WIDTH-7] : data_out_ir[MEM_WIDTH-4:MEM_WIDTH-5];
+
+reg_file_single_port #(.WIDTH(8),.DEPTH(4)) regfile(
     .clk(clk),
     .rst(rst),      // synchronous reset
     .we(ld_regFile),       // write enable
@@ -52,7 +54,7 @@ reg_file_single_port #(.WIDTH(8),.DEPTH(8)) regfile(
 
 reg[2:0] alu_opcode;
 wire alu_overflow;
-wire [7:0] alu_b = {2'b00,data_out_ir[5:0]};
+reg [7:0] alu_b ;
 wire [7:0] alu_y;
 
 Alu #(.N(8)) alu(
@@ -145,6 +147,7 @@ always @(posedge clk) begin
     end 
     FETCH:begin
         inc_pc <= 1;
+        alu_b <= {2'b00,data_out_ir[5:0]};
     end 
     DECODE:begin 
         case (ir_opcode)
@@ -159,7 +162,7 @@ always @(posedge clk) begin
                 addr_bus <= data_out_ir[5:0];
             end 
             add_imdt:begin 
-                $display("Decode[%d].add_imdt ALU: %d",pc_out,alu_opcode);
+                $display("Decode[%d].add_imdt ALU: %d result: REG[%d] = %d",pc_out,alu_opcode,reg_addrs,alu_y);
                 data_ld_regFile <= alu_y[7:0];
                 ld_regFile <= 1;
             end 
@@ -175,7 +178,7 @@ always @(posedge clk) begin
                 ld_regFile <= 1;
             end 
             mov_acc:begin 
-                $display("Mov[%d].ld imdt",pc_out);
+                $display("Mov[%d] ",pc_out);
                 
                 
 
