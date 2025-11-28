@@ -13,8 +13,10 @@ module memory_64xN #(parameter MEM_WIDTH=8)(
 
     // Synchronous write
     always @(*) begin
-        if (writeEnable)
+        if (writeEnable)begin 
             mem[addr] <= din;
+            $display("mem[%d] = %d",addr,din);
+        end 
     end
 
     // Load memory content from file at simulation start

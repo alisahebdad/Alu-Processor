@@ -12,7 +12,8 @@ reg ir_on_addr;
 
 
 reg inc_pc,clr_pc,ld_pc;
-wire [5:0] pc_in,pc_out;
+wire [5:0] pc_out;
+reg [5:0] pc_in;
 PC pc(
     .clk(clk),
     .rst(rst),
@@ -61,8 +62,6 @@ Alu #(.N(8)) alu(
     .y(alu_y),
     .overflow(alu_overflow)
 );  
-// assign 
-// assign data_bus_out = {{8{alu_y[7]}},alu_y[7:0]};
 
 // ........................ control unit ..........................
 typedef enum logic [2:0] {
@@ -78,7 +77,9 @@ typedef enum logic [2:0] {
     lda_addr = 3'b010,
     sta_addr = 3'b100,
     jmp_addr = 3'b110,
-    no_op    = 3'b111
+    no_op    = 3'b111,
+    ld_imdt  = 3'b001,
+    mov_acc  = 3'b011
 } opcode;
 
 
@@ -104,20 +105,20 @@ assign ir_opcode = data_out_ir[MEM_WIDTH-1:MEM_WIDTH-3];
 
 
 
-always @(ir_opcode) begin 
+always @(ir_opcode,state) begin 
     case (state)
         DECODE:begin 
             case (ir_opcode)
-                sta_addr: alu_opcode = 3'b100;
-                add_imdt: alu_opcode = 3'b000;
-                lda_addr: alu_opcode = 3'b100;
-                jmp_addr: alu_opcode = 3'b100;
+                sta_addr: alu_opcode =  3'b100 ;
+                add_imdt: alu_opcode = {1'b0,data_out_ir[MEM_WIDTH-6:MEM_WIDTH-7]};
+                lda_addr: alu_opcode =  3'b100 ;
+                jmp_addr: alu_opcode =  3'b100 ;
             endcase
         end
         default:begin 
             case (ir_opcode)
                 sta_addr: alu_opcode = 3'b100;
-                add_imdt: alu_opcode = 3'b000;
+                add_imdt: alu_opcode = {1'b0,data_out_ir[MEM_WIDTH-6:MEM_WIDTH-7]};
                 lda_addr: alu_opcode = 3'b100;
                 jmp_addr: alu_opcode = 3'b100;
             endcase
@@ -143,9 +144,7 @@ always @(posedge clk) begin
 
     end 
     FETCH:begin
-        
         inc_pc <= 1;
-        data_bus_out <= {{8{alu_y[7]}},alu_y[7:0]};
     end 
     DECODE:begin 
         case (ir_opcode)
@@ -160,7 +159,7 @@ always @(posedge clk) begin
                 addr_bus <= data_out_ir[5:0];
             end 
             add_imdt:begin 
-                $display("Decode[%d].add_imdt",pc_out);
+                $display("Decode[%d].add_imdt ALU: %d",pc_out,alu_opcode);
                 data_ld_regFile <= alu_y[7:0];
                 ld_regFile <= 1;
             end 
@@ -170,12 +169,26 @@ always @(posedge clk) begin
             no_op:begin 
                 $display("Decode[%d].No Operation",pc_out);
             end 
+            ld_imdt:begin 
+                $display("Decode[%d].ld imdt",pc_out);
+                data_ld_regFile <= data_out_ir[5:0];
+                ld_regFile <= 1;
+            end 
+            mov_acc:begin 
+                $display("Mov[%d].ld imdt",pc_out);
+                
+                
+
+            end 
         endcase
     end 
     EXECUTE:begin 
         addr_bus <= pc_out;
         ld_ir <= 1; 
         case (ir_opcode)
+            mov_acc: begin
+                
+            end
             sta_addr:begin
                 // $display("Execute[%d].sta_addr",pc_out-1);
             end 
@@ -190,9 +203,14 @@ always @(posedge clk) begin
             end 
             jmp_addr:begin 
                 // $display("Execute[%d].Jump to ",pc_out-1);
+                ld_pc <= 1;
+                pc_in <= data_out_ir[5:0];
             end 
             no_op:begin 
                 // $display("Execute[%d].No Operation",pc_out-1);
+            end 
+            ld_imdt:begin 
+
             end 
         endcase 
     end 

@@ -22,7 +22,7 @@ memory_64xN #(.MEM_WIDTH(MEM_WIDTH)) mainMemory
     .dout(data_bus_in),
     .din(data_bus_out),
     .addr(addr_bus),
-    .writeEnable(writeEnable)
+    .writeEnable(mem_write)
 );
 
 
@@ -33,7 +33,7 @@ initial begin
     rst = 1;
     #14
     rst = 0;
-    #1500;
+    #2500;
     $finish;
 end 
 
