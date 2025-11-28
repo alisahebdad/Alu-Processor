@@ -19,6 +19,7 @@ module reg_file_single_port #(
             for (i = 0; i < DEPTH; i = i + 1)
                 reg_array[i] <= {WIDTH{1'b0}};
         end else if (we) begin
+            $display("REGFILE[%d] = %d",addr,wdata);
             reg_array[addr] <= wdata;
         end
     end
